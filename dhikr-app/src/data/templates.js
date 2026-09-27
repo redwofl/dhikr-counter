@@ -117,7 +117,7 @@ export const DEFAULT_TEMPLATES = [
 
 export const DEFAULT_SETTINGS = {
   theme: "system",
-  language: "en",
+  language: "ur",
   vibration: true,
   sound: true,
   soundType: "wood",
