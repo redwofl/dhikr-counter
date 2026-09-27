@@ -68,9 +68,10 @@ Languages: Urdu, English, Arabic, Turkish, Malay, Indonesian.
 
 Privacy: your dhikr data stays on your device. The app shows ads to remain free.
 
-## Store assets needed (not included)
+## Store assets
 
-- App icon 512×512 PNG (a resized `logo.png` works)
-- Feature graphic 1024×500 PNG
-- At least 2 phone screenshots (9:16 or 16:9) — capture from the emulator
-- Privacy policy URL (required — host on GitHub Pages / any static site)
+- ✅ App icon 512×512 PNG (no alpha) — `store-assets/icon-512.png`
+- ✅ Feature graphic 1024×500 PNG — `store-assets/feature-graphic-1024x500.png`
+- Regenerate both anytime with: `cd dhikr-app && node scripts/make-store-assets.js`
+- ⬜ At least 2 phone screenshots (9:16 or 16:9) — capture from the emulator
+- ⬜ Privacy policy URL (required — host on GitHub Pages / any static site)
