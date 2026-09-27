@@ -1,0 +1,27 @@
+node_modules
+dist
+dist-ssr
+*.local
+.DS_Store
+.env
+.env.local
+coverage
+
+# Dev/debug logs and terminal captures
+*.log
+*.pid
+build-err.txt
+build-log.txt
+
+# Screenshots and design-analysis output
+*.png
+!public/**/*.png
+!android/app/src/main/res/**/*.png
+
+# Release artifacts
+*.apk
+*.aab
+*.zip
+
+# Temp output from dev scripts (scripts/dev/*)
+tmp-*

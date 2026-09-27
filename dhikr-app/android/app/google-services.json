@@ -1,0 +1,43 @@
+﻿{
+  "project_info": {
+    "project_number": "1234567890",
+    "project_id": "dhikr-counter-test",
+    "name": "Dhikr Counter",
+    "package_name": {
+      "default": "app.dhikr.counter"
+    }
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:1234567890:android:abcdef123456",
+        "android_client_info": {
+          "package_name": "app.dhikr.counter",
+          "certificate_hash": []
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "1234567890-abcdef123456.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_client_info": {
+            "package_name": "app.dhikr.counter",
+            "certificate_hash": []
+          }
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyDummyKeyForTestingPurposesOnly1234567890"
+        }
+      ],
+      "services": {
+        "appinvite_service": {},
+        "ads_service": {
+          "status": "enabled"
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

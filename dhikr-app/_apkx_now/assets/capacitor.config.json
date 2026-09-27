@@ -1,0 +1,14 @@
+{
+	"appId": "app.dhikr.counter",
+	"appName": "Bismillah Dhikr",
+	"webDir": "dist",
+	"android": {
+		"allowMixedContent": false
+	},
+	"plugins": {
+		"AdMob": {
+			"appId": "ca-app-pub-3333666454328224~8912877181",
+			"testingDevices": []
+		}
+	}
+}

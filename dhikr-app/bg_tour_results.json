@@ -1,0 +1,90 @@
+[
+  {
+    "label": "counter-bg.jpg",
+    "status": "OK",
+    "note": "",
+    "mean": "84,109,82",
+    "stdev": 35.57795902392822,
+    "shot": "../bg_tour_01.png"
+  },
+  {
+    "label": "counter-bg-full.png",
+    "status": "OK",
+    "note": "",
+    "mean": "74,56,39",
+    "stdev": 37.251299157731275,
+    "shot": "../bg_tour_02.png"
+  },
+  {
+    "label": "counter-bg-solid.png",
+    "status": "OK",
+    "note": "",
+    "mean": "31,29,24",
+    "stdev": 35.71939644252791,
+    "shot": "../bg_tour_03.png"
+  },
+  {
+    "label": "counter-bg-atmospheric.png",
+    "status": "OK",
+    "note": "",
+    "mean": "24,21,17",
+    "stdev": 34.350875264337475,
+    "shot": "../bg_tour_04.png"
+  },
+  {
+    "label": "counter-bg-cinema.png",
+    "status": "OK",
+    "note": "",
+    "mean": "12,10,8",
+    "stdev": 31.84974365337584,
+    "shot": "../bg_tour_05.png"
+  },
+  {
+    "label": "counter-bg-artwork.png",
+    "status": "OK",
+    "note": "",
+    "mean": "28,42,31",
+    "stdev": 28.35303372003537,
+    "shot": "../bg_tour_06.png"
+  },
+  {
+    "label": "counter-bg-editorial.png",
+    "status": "OK",
+    "note": "",
+    "mean": "102,88,75",
+    "stdev": 42.774661435795146,
+    "shot": "../bg_tour_07.png"
+  },
+  {
+    "label": "counter-bg-calligraphy.png",
+    "status": "OK",
+    "note": "",
+    "mean": "19,16,12",
+    "stdev": 32.055234268352855,
+    "shot": "../bg_tour_08.png"
+  },
+  {
+    "label": "counter-bg-custom.png",
+    "status": "OK",
+    "note": "",
+    "mean": "67,45,27",
+    "stdev": 45.32974707291918,
+    "shot": "../bg_tour_09.png"
+  },
+  {
+    "label": "counter-bg-custom.webp",
+    "status": "BAD",
+    "note": "duplicate frame of counter-bg-custom.png - swap did not land",
+    "mean": "67,45,27",
+    "stdev": 45.37968224354673,
+    "shot": "../bg_tour_10.png"
+  },
+  {
+    "label": "counter-bg-kaaba.webp",
+    "status": "OK",
+    "note": "",
+    "mean": "41,34,26",
+    "stdev": 33.965449574313475,
+    "shot": "../bg_tour_11.png"
+  }
+]

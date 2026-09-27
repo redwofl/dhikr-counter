@@ -1,0 +1,502 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+.snap-x {
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+}
+
+.snap-start {
+  scroll-snap-align: start;
+}
+
+/* Slide animations for horizontal scroll cards */
+@keyframes slideInFromRight {
+  from {
+    opacity: 0;
+    transform: translateX(30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes slideInFromLeft {
+  from {
+    opacity: 0;
+    transform: translateX(-30px) scale(0.95);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0) scale(1);
+  }
+}
+
+@keyframes activePulse {
+  0%, 100% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+}
+
+@keyframes slideToActive {
+  0% {
+    transform: translateX(0) scale(1);
+  }
+  50% {
+    transform: translateX(0) scale(1.08);
+  }
+  100% {
+    transform: translateX(0) scale(1.1);
+  }
+}
+
+.animate-slide-in-right {
+  animation: slideInFromRight 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+}
+
+.animate-slide-in-left {
+  animation: slideInFromLeft 0.4s cubic-bezier(0.34, 1.56, 0.64, 1) forwards;
+  opacity: 0;
+}
+
+.animate-active-pulse {
+  animation: activePulse 0.5s ease-out;
+}
+
+.animate-slide-to-active {
+  animation: slideToActive 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+/* Stagger delays for staggered entrance */
+.delay-1 { animation-delay: 0.05s; }
+.delay-2 { animation-delay: 0.1s; }
+.delay-3 { animation-delay: 0.15s; }
+.delay-4 { animation-delay: 0.2s; }
+.delay-5 { animation-delay: 0.25s; }
+.delay-6 { animation-delay: 0.3s; }
+.delay-7 { animation-delay: 0.35s; }
+.delay-8 { animation-delay: 0.4s; }
+.delay-9 { animation-delay: 0.45s; }
+
+/* Smooth scroll for all snap containers */
+.snap-x {
+  scroll-snap-type: x mandatory;
+  scroll-behavior: smooth;
+  -webkit-overflow-scrolling: touch;
+}
+
+.snap-start {
+  scroll-snap-align: start;
+}
+
+:root{
+  --cream:#FBF7F0; --cream-2:#F4EEE1; --beige:#EAE0C8; --peach:#F6E7DC;
+  --brown-900:#33261A; --brown-700:#5C4732; --brown-500:#8C7355;
+  --terra:#C1723C; --terra-dark:#9C5A2C; --gold:#C79A4B;
+  --ivory:#F0E7D0;
+  --dark-bg:#211A12; --dark-card:#2C2116; --dark-text:#EFE3CC; --dark-muted:#B9A484;
+  /* matches the dark green at the top of the wall image */
+  --wall-green:#223722;
+  /* System-bar insets, in CSS px.
+
+     These default to `env(safe-area-inset-*)`, which is the correct source in a
+     browser. It is NOT correct on Android: MainActivity draws the window
+     edge-to-edge on purpose (so the photo background fills the whole screen
+     instead of leaving a bare strip), and Android WebView resolves
+     `env(safe-area-inset-*)` from the display *cutout* only — never from the
+     status bar. On this device it reports 0, so page content slides up under
+     the status bar and the top-most nav icon swallows its own taps.
+
+     MainActivity therefore measures the real insets and overwrites these two
+     properties on <html> whenever they change. Reading through the variable
+     (rather than env() directly) means every inset consumer keeps working in a
+     browser and degrades to the old behaviour if the native publish ever fails. */
+  --sa-top: env(safe-area-inset-top, 0px);
+  --sa-bottom: env(safe-area-inset-bottom, 0px);
+  /* Space reserved on the inline-start edge for the floating nav rail. The
+     content column starts here, while page backgrounds reach under it. */
+  --nav-gutter: 5rem;
+  /* How far page backgrounds reach past their own inline-start edge to sit
+     under the floating nav rail. Pages that centre their content on the full
+     screen (the counter) set this to 0 so their box is the whole screen. */
+  --bg-bleed: var(--nav-gutter);
+
+  /* Photo-background overlay stack, shared by every `.counter-bg` /
+     `.pattern-bg` page so the three rules cannot drift apart again.
+
+     --bg-scrim  the inverted fade: clear at the top, deepening downward.
+     --bg-brown  a warm brown wash that grounds the lower part of the photo.
+                 It is anchored to the bottom and reaches full transparency
+                 by the middle of the screen, so it fades *up* into the image
+                 and can never present a horizontal edge of its own.
+     --bg-grain  a 128px film-grain tile, mirrored so it repeats seamlessly. */
+  --bg-scrim-light:
+    linear-gradient(
+      to bottom,
+      transparent 0%,
+      rgba(0, 0, 0, 0.04) 20%,
+      rgba(0, 0, 0, 0.12) 40%,
+      rgba(0, 0, 0, 0.24) 58%,
+      rgba(0, 0, 0, 0.38) 76%,
+      rgba(0, 0, 0, 0.5) 100%
+    );
+  /* Dark-mode scrim. This used to be *lighter* than --bg-scrim-light
+     (0.32 vs 0.50 at the bottom) and transparent across the whole top half.
+     That was tuned against a background image whose top 38% was measured as
+     black, so there was nothing left to dim up there — but the photo behind
+     the app is a mid-tone image (mean rgb 67,45,27) and the deployed
+     background changes over time. With no black region to hide, "transparent
+     at the top" meant the top half was left at full brightness and the
+     bottom was dimmed less than in light mode, so dark mode came out
+     measurably *brighter* than light mode (mean rgb 73,50,30 vs 67,45,27).
+     The photo looked the same and the text lost contrast: dark mode read as
+     broken.
+     A dark theme has to darken from the top down, so this is a full-coverage
+     wash in the app's own dark surface tone (near --dark-bg) rather than
+     black, keeping the warm cast. */
+  --bg-scrim-dark:
+    linear-gradient(
+      to bottom,
+      rgba(33, 26, 18, 0.5) 0%,
+      rgba(33, 26, 18, 0.58) 35%,
+      rgba(33, 26, 18, 0.68) 70%,
+      rgba(33, 26, 18, 0.78) 100%
+    );
+  --bg-brown-light:
+    linear-gradient(
+      to top,
+      rgba(92, 71, 50, 0.5) 0%,
+      rgba(92, 71, 50, 0.32) 14%,
+      rgba(92, 71, 50, 0.15) 28%,
+      rgba(92, 71, 50, 0.05) 40%,
+      transparent 52%
+    );
+  --bg-brown-dark:
+    linear-gradient(
+      to top,
+      rgba(92, 71, 50, 0.42) 0%,
+      rgba(92, 71, 50, 0.27) 14%,
+      rgba(92, 71, 50, 0.13) 28%,
+      rgba(92, 71, 50, 0.04) 40%,
+      transparent 52%
+    );
+  --bg-scrim: var(--bg-scrim-light);
+  --bg-brown: var(--bg-brown-light);
+  --bg-grain: url('/bg-grain.png');
+
+  /* The overlay stack actually painted over the photo, composed in ONE place
+     so `.counter-bg::after` and `.pattern-bg::after` stay identical.
+
+     It used to be three layers — grain, brown wash, scrim — but the grain
+     tile and the brown wash together read as a brown, blurry veil that
+     muddied the photo. Both are dropped; only the legibility scrim (a plain
+     top-to-bottom fade, no colour cast) is left. Re-enable by restoring:
+       var(--bg-grain), var(--bg-brown), var(--bg-scrim) */
+  --bg-overlay: var(--bg-scrim);
+}
+.dark {
+  /* Dark mode is deliberately gentler: the photo layer is already lifted to
+     --dark-bg by a `lighten` blend, so the scrim only has to seat the bottom
+     controls, and a heavier wash here is what made the screen read as a
+     black hole. */
+  --bg-scrim: var(--bg-scrim-dark);
+  --bg-brown: var(--bg-brown-dark);
+}
+html, body, #root { height: 100%; }
+body {
+  font-family: 'Inter', sans-serif;
+  background:
+    url('/eid-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  overscroll-behavior: none;
+  -webkit-tap-highlight-color: transparent;
+  color: var(--brown-900);
+}
+.dark body {
+  background:
+    linear-gradient(rgba(24, 17, 11, 0.72), rgba(24, 17, 11, 0.72)),
+    url('/eid-bg.jpg');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  color: var(--dark-text);
+}
+.font-display { font-family: 'Playfair Display', serif; }
+.font-arabic { font-family: 'Amiri', serif; }
+/* Premium metallic-gold treatment for Arabic lettering — multi-layer gradients
+   clipped to the glyphs so tone flows through the strokes: deep antique gold
+   settles in the lower/shadow areas, rich warm gold carries the main body,
+   and champagne + soft pale-gold highlights rise across selected curves.
+   Muted, editorial finish — no glow, outline, chrome, bevel or drop shadow.
+   NOTE: this class only applies the gradient text treatment; typography (size,
+   weight, alignment) belongs on the element via Tailwind utilities so callers
+   can size the word per context (e.g. text-3xl vs text-5xl). */
+.gold-lux {
+  color: #B88632;
+  /* background-clip:text paints only inside the element's padding box, but
+     Amiri's diacritics (damma, shadda stacks, …) rise above the line box.
+     Without padding those marks get no background and render invisible —
+     the dhikr then looks misspelled. Padding is asymmetric: generous on
+     top where the tall marks rise, tight at the bottom so the English
+     transliteration below stays visually close to the Arabic word. */
+  padding: 0.26em 0.14em 0.1em;
+  background-color: #B88632;
+  -webkit-text-fill-color: transparent;
+  background-image:
+    /* very fine restrained texture, following a subtle diagonal grain */
+    repeating-linear-gradient(
+      122deg,
+      rgba(255, 250, 225, 0.05) 0,
+      rgba(255, 250, 225, 0.05) 1px,
+      transparent 1px,
+      transparent 3px
+    ),
+    /* warm champagne + soft pale-gold highlights on the upper curves */
+    linear-gradient(
+      112deg,
+      #F3DFA0 0%,
+      #E8C875 14%,
+      rgba(232, 200, 117, 0.3) 28%,
+      transparent 42%
+    ),
+    linear-gradient(
+      298deg,
+      #E8C875 0%,
+      rgba(232, 200, 117, 0.35) 9%,
+      transparent 24%
+    ),
+    /* rich warm gold through the main strokes, antique gold in the shadows */
+    linear-gradient(
+      180deg,
+      #D4A84F 0%,
+      #C2913A 34%,
+      #B88632 54%,
+      #8A641F 76%,
+      #6B4E19 100%
+    );
+  -webkit-background-clip: text;
+  background-clip: text;
+}
+/* Solid-colour fallback where gradient text is unsupported — Arabic must
+   never render as transparent/unreadable. */
+@supports not ((-webkit-background-clip: text) or (background-clip: text)) {
+  .gold-lux {
+    color: #C79A4B;
+    -webkit-text-fill-color: #C79A4B;
+    background-image: none;
+  }
+}
+/* Premium line-icon system: warm ivory when inactive, warm gold when active.
+   Nav icon circles use a glassmorphic treatment in light mode; dark mode keeps
+   a plain translucent disc with no outer glow. */
+.icon-ivory { color: var(--ivory); }
+.icon-gold { color: var(--gold); }
+.nav-glass {
+  background: rgba(255, 255, 255, 0.45);
+  -webkit-backdrop-filter: blur(14px) saturate(1.5);
+  backdrop-filter: blur(14px) saturate(1.5);
+  border: 1px solid rgba(255, 255, 255, 0.6);
+  box-shadow:
+    0 2px 10px rgba(90, 70, 48, 0.12),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+.nav-glass-active {
+  background: rgba(199, 154, 75, 0.28);
+  border-color: rgba(199, 154, 75, 0.5);
+}
+.dark .nav-glass {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.12);
+  box-shadow: none;
+}
+.dark .nav-glass-active {
+  background: rgba(199, 154, 75, 0.18);
+  border-color: rgba(199, 154, 75, 0.3);
+}
+.safe-bottom { padding-bottom: var(--sa-bottom); }
+.safe-top { padding-top: var(--sa-top); }
+@media (pointer: fine) {
+  ::-webkit-scrollbar { width: 6px; height: 6px; }
+  ::-webkit-scrollbar-thumb { background: rgba(90,70,48,.25); border-radius: 4px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { animation-duration: .001ms !important; transition-duration: .001ms !important; }
+}
+.pattern-bg {
+  position: relative;
+  isolation: isolate;
+}
+.pattern-bg::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; inset-inline-end: -6px;
+  /* Reach one gutter past the page's inline-start edge so the photo still
+     covers the full screen behind the floating nav rail, while the page's
+     own content stays inside the content column beside it. */
+  inset-inline-start: calc(-1 * var(--bg-bleed));
+  background-image: url('/counter-bg-kaaba.webp?v=65');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  background-attachment: fixed;
+  z-index: -2;
+  pointer-events: none;
+}
+.pattern-bg::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; inset-inline-end: -6px;
+  /* same reach as the photo layer */
+  inset-inline-start: calc(-1 * var(--bg-bleed));
+  background-image: var(--bg-overlay);
+  background-size: auto;
+  background-repeat: no-repeat;
+  z-index: -1;
+  pointer-events: none;
+}
+/* Counter page background — full-bleed photo behind the whole screen.
+   The photo is brightest at the bottom, so the scrim is inverted: clear at
+   the top, deepening toward the bottom. That seats the nav rail and the
+   bottom controls against the photo and leaves the upper screen untouched. */
+.counter-bg {
+  position: relative;
+  isolation: isolate;
+}
+.counter-bg::before {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0;
+  /* Symmetric bleed, and the same on both edges.
+     These were `inset-inline-end: -6px` against
+     `inset-inline-start: calc(-1 * var(--bg-bleed))` (5rem = 80px), which
+     built an 86px-wide box whose centre sat at 209.1px while the screen
+     centre is 206px. `background-position: center` centres the photo on
+     whatever box it is given, so the picture was drawn ~8 device px right of
+     true centre — a small lopsidedness that is obvious once you look for it.
+     Both edges now reach the same distance past the page box, which puts the
+     pseudo-element's centre exactly on the screen centre and leaves the photo
+     still covering the full width behind the floating nav rail. */
+  inset-inline-start: calc(-1 * var(--bg-bleed));
+  inset-inline-end: calc(-1 * var(--bg-bleed));
+  background-image: url('/counter-bg-kaaba.webp?v=65');
+  background-size: cover;
+  background-position: center;
+  background-repeat: no-repeat;
+  z-index: -2;
+  pointer-events: none;
+}
+/* Dark mode lifts the photo's darkest pixels up to the app's own dark
+   surface with per-channel max (`lighten`), so the backdrop is never darker
+   than the page around it. On a photo with a genuinely black region that is
+   the whole effect; on the mid-tone image actually deployed it changes almost
+   nothing, because per-channel max against a light backdrop is a no-op. The
+   darkening itself is done by --bg-scrim-dark on the `::after` layer above,
+   which is a full-coverage wash and does not depend on the photo happening
+   to contain black. */
+.dark .counter-bg::before,
+.dark .pattern-bg::before {
+  background-color: var(--dark-bg);
+  background-blend-mode: lighten;
+}
+/* No `.dark` override is needed for the overlay stack: --bg-scrim and
+   --bg-brown are redefined on `.dark` in :root, and a pseudo-element
+   inherits custom properties from its originating element, so the base
+   `.counter-bg::after` / `.pattern-bg::after` rules pick up the dark values
+   on their own. Duplicating the stack here would just be another place for
+   the light and dark backgrounds to drift apart. */
+.counter-bg::after {
+  content: "";
+  position: absolute;
+  top: 0; bottom: 0; inset-inline-end: -6px;
+  /* same reach as the photo layer */
+  inset-inline-start: calc(-1 * var(--bg-bleed));
+  background-image: var(--bg-overlay);
+  background-size: auto;
+  background-repeat: no-repeat;
+  z-index: -1;
+  pointer-events: none;
+}
+.bead { filter: drop-shadow(0 2px 3px rgba(90,50,10,.3)); }
+.glass { backdrop-filter: blur(10px); }
+
+/* Dark mode: counter-page text/controls sit on the photo — re-tint them for
+   the dimmed backdrop instead of staying light-theme ivory. */
+.dark .counter-bg .text-white,
+.dark .counter-bg .text-white\/70,
+.dark .counter-bg .text-white\/50 {
+  color: var(--dark-text);
+}
+.dark .counter-bg .text-white\/70 { color: var(--dark-muted); }
+.dark .counter-bg .text-white\/50 { color: var(--dark-muted); }
+.dark .counter-bg .bg-white\/10 {
+  background-color: rgba(255, 255, 255, 0.1); /* keep contrast on dark photo */
+  border-color: rgba(255, 255, 255, 0.15);
+}
+.dark .counter-bg .drop-shadow-\[0_2px_6px_rgba\(0\,0\,0\,0\.6\)\] { filter: none; }
+
+input[type=range] { -webkit-appearance: none; appearance: none; background: transparent; }
+input[type=range]::-webkit-slider-runnable-track { height: 3px; background: var(--terra-dark); border-radius: 2px; }
+input[type=range]::-webkit-slider-thumb {
+  -webkit-appearance: none; appearance: none; margin-top: -7px;
+  width: 17px; height: 17px; border-radius: 50%; background: var(--terra-dark);
+  border: 2px solid #fff; box-shadow: 0 1px 3px rgba(0,0,0,.3);
+}
+input[type=range]::-moz-range-track { height: 3px; background: var(--terra-dark); border-radius: 2px; }
+input[type=range]::-moz-range-thumb { width: 17px; height: 17px; border-radius: 50%; background: var(--terra-dark); border: 2px solid #fff; }
+
+@keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+@keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }
+@keyframes popIn { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: scale(1); } }
+@keyframes floatUp {
+  0% { opacity: 0.9; transform: translateX(-50%) translateY(0) scale(1); }
+  50% { opacity: 0.7; transform: translateX(-50%) translateY(-30px) scale(1.05); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-70px) scale(0.9); }
+}
+@keyframes confettiFall {
+  0% { transform: translateY(-10vh) rotate(0deg); opacity: 1; }
+  90% { opacity: 1; }
+  100% { transform: translateY(110vh) rotate(720deg); opacity: 0; }
+}
+/* Mala / tasbih counter animations */
+@keyframes malaBounce {
+  0% { transform: scale(1); }
+  45% { transform: scale(1.045); }
+  100% { transform: scale(1); }
+}
+@keyframes beadFlash {
+  0% { transform: scale(1); }
+  35% { transform: scale(1.32); }
+  65% { transform: scale(1.04); }
+  100% { transform: scale(1); }
+}
+@keyframes ringShock {
+  0% { transform: scale(1); opacity: 0.85; }
+  100% { transform: scale(1.13); opacity: 0; }
+}
+@keyframes floatUpPrem {
+  0% { opacity: 0; transform: translateX(-50%) translateY(10px) scale(0.95); }
+  18% { opacity: 1; transform: translateX(-50%) translateY(0) scale(1); }
+  80% { opacity: 1; transform: translateX(-50%) translateY(-22px) scale(1); }
+  100% { opacity: 0; transform: translateX(-50%) translateY(-30px) scale(1.02); }
+}
+/* Arabic dhikr bloom — the word springs into the centre of the mala,
+   holds crisp over the count, then drifts up and dissolves. Only
+   transform + opacity animate, so Android WebView keeps it at 60fps. */
+@keyframes arabicBloom {
+  0% { opacity: 0; transform: translate(-50%, -46%) scale(0.72); }
+  18% { opacity: 1; transform: translate(-50%, -50%) scale(1.08); }
+  38% { opacity: 1; transform: translate(-50%, -50%) scale(1); }
+  76% { opacity: 1; transform: translate(-50%, -55%) scale(1); }
+  100% { opacity: 0; transform: translate(-50%, -66%) scale(1.05); }
+}
+/* Hide scrollbar but keep scroll functionality */
+.scrollbar-hide::-webkit-scrollbar { display: none; }
+.scrollbar-hide { -ms-overflow-style: none; scrollbar-width: none; }
