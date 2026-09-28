@@ -3,7 +3,8 @@ import { Geolocation } from "@capacitor/geolocation";
 import { Capacitor } from "@capacitor/core";
 import ScreenHeader from "./ScreenHeader.jsx";
 import Icon from "../lib/Icon.jsx";
-import { computePrayerTimes, qiblaBearing } from "../lib/prayerTimes.js";
+import { computePrayerTimes, qiblaBearing, civilOffsetFor } from "../lib/prayerTimes.js";
+import { LOCATION_KEY } from "../lib/storage.js";
 
 const fmtTime = (d) =>
   d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
@@ -12,7 +13,7 @@ const fmtTime = (d) =>
 export default function PrayerTimesPage({ t, onBack }) {
   const [loc, setLoc] = useState(() => {
     try {
-      return JSON.parse(localStorage.getItem("dhikr_location") || "null");
+      return JSON.parse(localStorage.getItem(LOCATION_KEY) || "null");
     } catch {
       return null;
     }
@@ -21,7 +22,7 @@ export default function PrayerTimesPage({ t, onBack }) {
   // private mode, storage disabled by policy) must not take the page down.
   const [status, setStatus] = useState(() => {
     try {
-      return localStorage.getItem("dhikr_location") ? "ok" : "idle";
+      return localStorage.getItem(LOCATION_KEY) ? "ok" : "idle";
     } catch {
       return "idle";
     }
@@ -58,7 +59,7 @@ export default function PrayerTimesPage({ t, onBack }) {
     const apply = (lat, lng) => {
       const l = { lat, lng };
       try {
-        localStorage.setItem("dhikr_location", JSON.stringify(l));
+        localStorage.setItem(LOCATION_KEY, JSON.stringify(l));
       } catch {}
       setLoc(l);
       setStatus("ok");
@@ -99,7 +100,7 @@ export default function PrayerTimesPage({ t, onBack }) {
     setManualError(false);
     const l = { lat, lng };
     try {
-      localStorage.setItem("dhikr_location", JSON.stringify(l));
+      localStorage.setItem(LOCATION_KEY, JSON.stringify(l));
     } catch {}
     setLoc(l);
     setStatus("ok");
@@ -108,8 +109,12 @@ export default function PrayerTimesPage({ t, onBack }) {
   const data = useMemo(() => {
     if (!loc) return null;
     try {
-      const times = computePrayerTimes(now, loc.lat, loc.lng);
-      const tomorrowTimes = computePrayerTimes(new Date(now.getTime() + 86400000), loc.lat, loc.lng);
+      // Express the times on the *location's* clock, not the device's. Without
+      // this, a saved coordinate in another timezone shifted every prayer by
+      // hours and Dhuhr could render as "01:29 AM".
+      const tz = civilOffsetFor(loc.lng, -now.getTimezoneOffset() / 60);
+      const times = computePrayerTimes(now, loc.lat, loc.lng, tz);
+      const tomorrowTimes = computePrayerTimes(new Date(now.getTime() + 86400000), loc.lat, loc.lng, tz);
       const list = [
         { key: "fajr", date: times.fajr },
         { key: "sunrise", date: times.sunrise },
@@ -118,7 +123,13 @@ export default function PrayerTimesPage({ t, onBack }) {
         { key: "maghrib", date: times.maghrib },
         { key: "isha", date: times.isha }
       ];
-      const next = list.find((p) => p.date > now);
+      // Take the *earliest* prayer still ahead, not the first one in the list.
+      // The canonical order breaks down at high latitudes, where Isha lands
+      // after midnight and therefore sorts before this morning's Fajr — a plain
+      // `find` would then name Isha as "next" while Fajr was still ahead.
+      const next = list
+        .filter((p) => p.date > now)
+        .reduce((best, p) => (best === null || p.date < best.date ? p : best), null);
       // After Isha every prayer has passed for today, so carry tomorrow's Fajr
       // into the list — the "next prayer" card and the highlighted row then
       // always agree instead of the card pointing to an unlisted time.

@@ -1,5 +1,12 @@
 import { describe, it, expect } from "vitest";
-import { applyTap, resetSession, setCustomMax, effectiveMaxFor, isValidMaxCount } from "../counterLogic.js";
+import {
+  applyTap,
+  resetSession,
+  setCustomMax,
+  effectiveMaxFor,
+  isValidMaxCount,
+  clampSessionToTemplate
+} from "../counterLogic.js";
 import { newSession } from "../../data/templates.js";
 
 const template = {
@@ -83,6 +90,66 @@ describe("effectiveMaxFor", () => {
     let session = newSession(template.id);
     session = setCustomMax(session, "i1", 500);
     expect(effectiveMaxFor(session, template.items[0])).toBe(500);
+  });
+
+  it("survives a missing item instead of throwing during render", () => {
+    // A session can point at an item the template no longer has — the custom
+    // template was edited shorter while the session was mid-round. This used
+    // to dereference `item.id` on undefined and take the app to the
+    // ErrorBoundary, whose only recovery erased the whole save.
+    const session = { ...newSession(template.id), currentCount: 2 };
+    expect(() => effectiveMaxFor(session, undefined)).not.toThrow();
+    expect(effectiveMaxFor(session, undefined)).toBe(2);
+    expect(effectiveMaxFor(undefined, template.items[0])).toBe(0);
+  });
+});
+
+describe("setCustomMax with a target below the live count", () => {
+  it("stores the value the user entered, not the current count", () => {
+    // The counter used to clamp the target up to the live count, so entering 3
+    // while 5/33 were counted silently stored 5 and the dialog re-opened on 5.
+    let session = newSession(template.id);
+    session = { ...session, currentCount: 5 };
+    session = setCustomMax(session, "i1", 3);
+    expect(effectiveMaxFor(session, template.items[0])).toBe(3);
+  });
+
+  it("completes the item on the next tap without overshooting the target", () => {
+    let session = newSession(template.id);
+    session = { ...session, currentCount: 5 };
+    session = setCustomMax(session, "i1", 3);
+    const next = applyTap(template, session);
+    expect(next.currentItemIndex).toBe(1);
+    expect(next.currentCount).toBe(0);
+  });
+});
+
+describe("clampSessionToTemplate", () => {
+  it("pulls an out-of-range index back to the last item", () => {
+    // Editing a 3-line custom template down to 2 lines while the session was on
+    // line 3 — the exact case that used to crash the counter's next render.
+    let session = newSession("t1");
+    session = { ...session, currentItemIndex: 2, currentCount: 1 };
+    const clamped = clampSessionToTemplate(template, session);
+    expect(clamped.currentItemIndex).toBe(1);
+    expect(clamped.currentCount).toBe(0);
+  });
+
+  it("resets a session whose template has no items left", () => {
+    const session = { ...newSession("t1"), currentItemIndex: 1, currentCount: 2, completed: true };
+    const clamped = clampSessionToTemplate({ id: "t1", items: [] }, session);
+    expect(clamped).toMatchObject({ currentItemIndex: 0, currentCount: 0, completed: false });
+  });
+
+  it("leaves an in-range session untouched", () => {
+    const session = { ...newSession("t1"), currentItemIndex: 1, currentCount: 1 };
+    expect(clampSessionToTemplate(template, session)).toBe(session);
+  });
+
+  it("coerces a non-numeric or negative index", () => {
+    expect(clampSessionToTemplate(template, { ...newSession("t1"), currentItemIndex: "2" }).currentItemIndex).toBe(1);
+    expect(clampSessionToTemplate(template, { ...newSession("t1"), currentItemIndex: -5 }).currentItemIndex).toBe(0);
+    expect(clampSessionToTemplate(template, { ...newSession("t1"), currentItemIndex: NaN }).currentItemIndex).toBe(0);
   });
 });
 

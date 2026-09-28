@@ -4,6 +4,14 @@
  */
 
 export function effectiveMaxFor(session, item) {
+  // Either side can be absent: a session whose `currentItemIndex` no longer
+  // resolves (the template was edited or replaced underneath it) arrives without
+  // an item, and callers can reach this with no session at all. Fall back to the
+  // last recorded repetition so they get a usable number instead of a TypeError
+  // thrown from inside a render.
+  if (!session || !item) {
+    return session && Number.isFinite(session.currentCount) ? session.currentCount : 0;
+  }
   return (session.customMax && session.customMax[item.id]) || item.count;
 }
 
@@ -14,6 +22,9 @@ export function effectiveMaxFor(session, item) {
  */
 export function applyTap(template, session) {
   if (!template || !session || session.completed) return session;
+  // Nothing to count against: the session points at an item the template no
+  // longer has. Leave it alone rather than dereferencing undefined.
+  if (!template.items[session.currentItemIndex]) return session;
 
   const item = template.items[session.currentItemIndex];
   const effMax = effectiveMaxFor(session, item);
@@ -64,4 +75,23 @@ export function setCustomMax(session, itemId, newMax) {
 export function isValidMaxCount(value) {
   const n = Number(value);
   return Number.isInteger(n) && n >= 1 && n <= 10000;
+}
+
+/**
+ * Brings a session back inside its template after the template changed shape
+ * underneath it — a custom template edited (or a backup imported) while a
+ * session pointed into it. `currentItemIndex` is clamped into range and the
+ * partially-counted item restarts, because the old count belonged to a line
+ * that no longer exists. Returns the session untouched when it already fits.
+ */
+export function clampSessionToTemplate(template, session) {
+  if (!session || !template) return session;
+  const n = Array.isArray(template.items) ? template.items.length : 0;
+  if (n === 0) {
+    return { ...session, currentItemIndex: 0, currentCount: 0, completed: false, completedItems: [] };
+  }
+  const raw = Number(session.currentItemIndex);
+  const idx = Math.min(Math.max(0, Number.isFinite(raw) ? Math.trunc(raw) : 0), n - 1);
+  if (idx === session.currentItemIndex) return session;
+  return { ...session, currentItemIndex: idx, currentCount: 0, completed: false };
 }

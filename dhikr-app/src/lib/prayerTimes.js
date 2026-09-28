@@ -9,6 +9,45 @@
 // Degrees below the horizon used for the twilight prayers (Muslim World League).
 export const FAJR_ANGLE = 18;
 export const ISHA_ANGLE = 17;
+
+/**
+ * Every civil UTC offset any real timezone uses. Prayer times are wall-clock
+ * times for a *place*, so the offset must come from the location — but the app
+ * has no timezone database, only coordinates. These constants let
+ * `civilOffsetFor` snap a longitude-derived offset onto an offset some real
+ * zone actually uses instead of inventing one like -8.13.
+ */
+const CIVIL_OFFSETS = [
+  -12, -11, -10, -9.5, -9, -8, -7, -6, -5, -4, -3.5, -3, -2, -1, 0, 1, 2, 3, 3.5,
+  4, 4.5, 5, 5.5, 5.75, 6, 6.5, 7, 8, 8.75, 9, 9.5, 10, 10.5, 11, 12, 12.75, 13,
+  13.75, 14
+];
+
+/**
+ * The UTC offset prayer times should be expressed on, for a location at
+ * `lng` viewed from a device whose own clock is at `deviceOffset`.
+ *
+ * Solar time at the location is `lng / 15` hours from UTC, and civil offsets
+ * track it closely, so longitude is the right basis for a location far from the
+ * device. It is only an approximation: it ignores daylight saving and
+ * political borders, and a handful of countries sit 1–2 h off their longitude
+ * (all of China at +8, Spain, Iceland).
+ *
+ * So prefer the device's own offset whenever it is *consistent* with the
+ * location — that is the common case (someone using prayer times where they
+ * actually are) and the device knows about DST and borders. Only when the two
+ * disagree wildly does the location win, which is the case that used to render
+ * Dhuhr as "01:29 AM" for a US coordinate on a UTC+5:30 phone.
+ */
+export function civilOffsetFor(lng, deviceOffset) {
+  const solar = lng / 15;
+  if (Number.isFinite(deviceOffset) && Math.abs(deviceOffset - solar) <= 1.5) {
+    return deviceOffset;
+  }
+  return CIVIL_OFFSETS.reduce((best, o) =>
+    Math.abs(o - solar) < Math.abs(best - solar) ? o : best
+  );
+}
 // The sun's centre sits 0.833° below the horizon at apparent sunrise/sunset.
 const SUNRISE_ANGLE = 0.833;
 

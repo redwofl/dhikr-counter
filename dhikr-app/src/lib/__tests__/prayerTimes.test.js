@@ -1,5 +1,5 @@
 import { describe, it, expect } from "vitest";
-import { computePrayerTimes, qiblaBearing, PRAYER_KEYS } from "../prayerTimes.js";
+import { computePrayerTimes, qiblaBearing, civilOffsetFor, PRAYER_KEYS } from "../prayerTimes.js";
 
 // Expected values are Muslim World League (Fajr 18°, Isha 17°, Shafi'i Asr)
 // reference times produced by the `adhan` library, in the local clock of the
@@ -93,6 +93,50 @@ describe("computePrayerTimes", () => {
   it("rolls Isha into the next day at high latitude instead of clamping", () => {
     const times = computePrayerTimes(new Date("2026-06-21T12:00:00Z"), 51.5074, -0.1278, 1);
     expect(times.isha.getDate()).toBe(22);
+  });
+});
+
+describe("civilOffsetFor", () => {
+  // Regression: the prayer screen passed no offset, so computePrayerTimes fell
+  // back to the *device's* offset no matter where the saved coordinates were.
+  // Mountain View coordinates on a UTC+5:30 phone rendered Dhuhr as "01:29 AM".
+  it("keeps the device offset when the device is plausibly at the location", () => {
+    // Someone using prayer times where they actually are: the device knows
+    // about DST and borders in a way longitude never can.
+    expect(civilOffsetFor(77.2, 5.5)).toBe(5.5); // Delhi on an IST phone
+    expect(civilOffsetFor(-0.13, 1)).toBe(1); // London on a BST phone
+    expect(civilOffsetFor(-74, -4)).toBe(-4); // New York on an EDT phone
+  });
+
+  it("uses the location instead of a device in a different timezone", () => {
+    expect(civilOffsetFor(-122.08, 5.5)).toBe(-8); // Mountain View, not +5:30
+    expect(civilOffsetFor(39.83, 5.5)).toBe(3); // Makkah, not +5:30
+    expect(civilOffsetFor(28.98, -8)).toBe(2); // Istanbul, not -8
+  });
+
+  it("always lands on an offset a real timezone uses", () => {
+    for (let lng = -180; lng <= 180; lng += 1.5) {
+      const off = civilOffsetFor(lng, undefined);
+      expect(Number.isInteger(off * 4)).toBe(true); // quarter-hour granularity
+      expect(off).toBeGreaterThanOrEqual(-12);
+      expect(off).toBeLessThanOrEqual(14);
+    }
+  });
+
+  it("falls back to longitude when the device offset is unknown", () => {
+    // No timezone database ships with the app, so a remote coordinate can only
+    // be placed from its longitude, snapped to an offset some zone really uses.
+    // That is exact for whole-hour zones and can be 30-45 min out for half- and
+    // quarter-hour ones (Delhi is UTC+5:30 but sits on solar 5:09, so it snaps
+    // to +5). Pinned here so the limit is a known quantity, not a surprise.
+    expect(civilOffsetFor(106.85, undefined)).toBe(7); // Jakarta
+    expect(civilOffsetFor(-122.08, undefined)).toBe(-8); // Mountain View
+    expect(civilOffsetFor(77.2, undefined)).toBe(5); // Delhi, 30 min under IST
+  });
+
+  it("still returns a usable offset for an absent or malformed device offset", () => {
+    expect(civilOffsetFor(-122.08, null)).toBe(-8);
+    expect(civilOffsetFor(-122.08, NaN)).toBe(-8);
   });
 });
 

@@ -4,9 +4,11 @@ import { LocalNotifications } from "@capacitor/local-notifications";
 import { DEFAULT_TEMPLATES, DEFAULT_SETTINGS, newSession, localizeDefaultTemplate } from "./data/templates.js";
 import { TRANSLATIONS } from "./data/translations.js";
 import { Capacitor } from "@capacitor/core";
-import { loadState, saveState, freshState, todayKey, STORAGE_KEY } from "./lib/storage.js";
+import { loadState, saveState, freshState, todayKey, STORAGE_KEY, LOCATION_KEY, repairState } from "./lib/storage.js";
 import { nextDailyAt, nextWeeklyAt, weekKeyOf, weekStats, weeklyBody, weeklySummaryAction } from "./lib/notifications.js";
 import { unlockAudioOnFirstInteraction } from "./lib/sound.js";
+import { clampSessionToTemplate } from "./lib/counterLogic.js";
+import { navIntent, NAV_INTENT } from "./lib/navLogic.js";
 import { addTemplate, updateTemplate, removeTemplate, isCustomTemplateId } from "./lib/templateOps.js";
 import { isTodayGoalComplete, computeStreak, remainingToGoal, getTodayRepetitions } from "./lib/dailyGoal.js";
 
@@ -29,9 +31,8 @@ import NavRail from "./components/NavRail.jsx";
 import PrayerTimesPage from "./components/PrayerTimesPage.jsx";
 
 export default function App() {
-  const [state, setState] = useState(() => loadState() || freshState(DEFAULT_SETTINGS));
+  const [state, setState] = useState(() => loadState(DEFAULT_SETTINGS) || freshState(DEFAULT_SETTINGS));
   const [view, setView] = useState("counter");
-  const [navExpanded, setNavExpanded] = useState(false);
   // Clean mode: tapping Home while on the counter hides the other nav icons
   // so only the Home icon stays; tapping Home again restores all of them.
   const [navMinimal, setNavMinimal] = useState(false);
@@ -131,7 +132,6 @@ export default function App() {
       if (viewRef.current !== "counter") {
         setView("counter");
         setNavMinimal(false);
-        setNavExpanded(false);
         setCreating(false);
         setEditingTemplate(null);
         setDeleteTarget(null);
@@ -237,8 +237,10 @@ export default function App() {
   //              notification so we don't re-check all week long
   //   skip     → this week's recap is already armed
   //   cancel   → toggle is off; drop any pending notification and the marker
-  // Stats are read at arming time for the *previous* 7 days, so the body is
-  // always a recap of the week that just ended, never of the coming one.
+  // Stats are read at arming time and cover this week to date, so the body is
+  // a recap of the week the recap is for — not a rolling window of the 7 days
+  // before the moment the app happened to be opened. The notification is armed
+  // for the next Monday 09:00, i.e. the end of the week being summarised.
   useEffect(() => {
     const scheduleWeekly = async () => {
       const enabled = !!state.settings.weeklySummary;
@@ -346,7 +348,23 @@ export default function App() {
         ) {
           throw new Error("bad shape: dailyStats");
         }
-        setState((s) => ({ ...s, ...parsed }));
+        setState((s) => {
+          // Shape-check, then run the same repair the load path uses, so a
+          // backup cannot reintroduce the state shapes that crash a render:
+          // list fields that are not lists, a `dailyStats` day whose
+          // `repetitions` is a string (ProgressPage's `.toLocaleString()`),
+          // a `dailyGoal` that makes the nav ring print NaN, or a session whose
+          // `currentItemIndex` points past the end of its template's items —
+          // which used to throw during render and drop into the ErrorBoundary.
+          const merged = repairState({ ...s, ...parsed }, DEFAULT_SETTINGS);
+          if (merged.session) {
+            const tpl = [...DEFAULT_TEMPLATES, ...merged.customTemplates].find(
+              (tp) => tp.id === merged.session.templateId
+            );
+            merged.session = clampSessionToTemplate(tpl, merged.session);
+          }
+          return merged;
+        });
         showToast(t.importSuccess);
       })
       .catch(() => showToast(t.importFailed));
@@ -438,21 +456,39 @@ export default function App() {
   const handleCreateSave = (tpl) => {
     setState((s) => ({ ...s, customTemplates: addTemplate(s.customTemplates, tpl) }));
     setCreating(false);
-    showToast(t.save + " ?");
+    // "✓" like the goal toast, not the "?" this used to show — the check mark
+    // was lost to an encoding slip and the save confirmation read as a question.
+    showToast(t.save + " ✓");
   };
 
   const handleEditSave = (tpl) => {
-    setState((s) => ({ ...s, customTemplates: updateTemplate(s.customTemplates, tpl) }));
+    setState((s) => {
+      const customTemplates = updateTemplate(s.customTemplates, tpl);
+      // Editing a template mid-session can leave the session pointing past the
+      // end of a shortened items array, which crashed the counter's next render.
+      // Pull it back into range here, at the point the shape changed.
+      return {
+        ...s,
+        customTemplates,
+        session: s.session && s.session.templateId === tpl.id ? clampSessionToTemplate(tpl, s.session) : s.session
+      };
+    });
     setEditingTemplate(null);
-    showToast(t.save + " ?");
+    showToast(t.save + " ✓");
   };
 
   const confirmDelete = () => {
     if (!deleteTarget) return;
-    setState((s) => ({
-      ...s,
-      customTemplates: isCustomTemplateId(deleteTarget.id) ? removeTemplate(s.customTemplates, deleteTarget.id) : s.customTemplates
-    }));
+    setState((s) => {
+      const customTemplates = isCustomTemplateId(deleteTarget.id)
+        ? removeTemplate(s.customTemplates, deleteTarget.id)
+        : s.customTemplates;
+      // Deleting the template a session is running drops the session with it,
+      // so the counter falls back to its "choose a template" screen rather
+      // than dereferencing a template that no longer exists.
+      const session = s.session && s.session.templateId === deleteTarget.id ? null : s.session;
+      return { ...s, customTemplates, session };
+    });
     setDeleteTarget(null);
   };
 
@@ -486,31 +522,25 @@ export default function App() {
     goTo("privacy");
   };
 
-  // Shared page switch: leaves clean mode, collapses the rail and stops the
-  // auto counter so the counter screen and its timer never go stale.
+  // Shared page switch: leaves clean mode and stops the auto counter so the
+  // counter screen and its timer never go stale.
   const goTo = (v) => {
     if (v !== "counter") resetAutoCounter();
     setView(v);
     setNavMinimal(false);
-    setNavExpanded(false); // collapse back to icon-only so the page gets full width
   };
 
+  // Tapping Home while already on the counter toggles clean mode: hide the
+  // other nav icons so only Home stays, tap Home again to restore all icons.
+  // Tapping the item you are already on does nothing. See `navIntent` for why
+  // the second case used to send the user to the counter instead.
   const handleNav = (v) => {
-    // Tapping Home while already on the counter toggles clean mode: hide the
-    // other nav icons so only Home stays, tap Home again to restore all icons.
-    // Tapping any other icon always shows the full navigation again.
-    if (v === "counter" && view === "counter") {
-      setNavExpanded(false);
+    const intent = navIntent(v, view);
+    if (intent.type === NAV_INTENT.TOGGLE_CLEAN) {
       setNavMinimal((m) => !m);
       return;
     }
-    if (v === view) {
-      if (v !== "counter") {
-        goTo("counter");
-      }
-      return;
-    }
-    goTo(v);
+    if (intent.type === NAV_INTENT.NAVIGATE) goTo(intent.to);
   };
 
   return (
@@ -518,8 +548,6 @@ export default function App() {
       <NavRail
         items={navItems}
         activeView={view}
-        expanded={navExpanded}
-        onToggle={() => setNavExpanded((e) => !e)}
         onNavigate={handleNav}
         minimal={navMinimal}
         t={t}
@@ -600,7 +628,22 @@ export default function App() {
           onImport={handleImport}
           onToast={showToast}
           onResetAll={() => {
-            localStorage.removeItem(STORAGE_KEY);
+            // Every key the app owns, not just the main save. `dhikr_location`
+            // used to survive, so the confirm text promised a permanent erase
+            // while Prayer Times still showed the old coordinates; the weekly
+            // marker also lingered and suppressed this week's recap.
+            try {
+              localStorage.removeItem(STORAGE_KEY);
+              localStorage.removeItem(LOCATION_KEY);
+              localStorage.removeItem(WEEKLY_KEY);
+            } catch (_) {
+              /* storage unavailable; state is still cleared below */
+            }
+            // The counter is about to unmount (introCompleted flips to false)
+            // without running its cleanup, so clear the running flag here —
+            // otherwise the nav timer icon shows "stop" while tapping it opens
+            // the Auto Counter dialog.
+            resetAutoCounter();
             setState(freshState(DEFAULT_SETTINGS));
           }}
         />

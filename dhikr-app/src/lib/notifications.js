@@ -71,21 +71,42 @@ export function weekKeyOf(now) {
 }
 
 /**
- * Aggregates the 7 days *before* `now`'s day (exclusive of today), so a
- * summary scheduled early in the week reports on the completed week.
+ * Aggregates the calendar week `now` falls in — this week's Monday up to and
+ * including today.
+ *
+ * This used to sum the 7 days *before* today, which is not a week anyone
+ * means: on a Monday it covered Thu–Sun of the week before (leaving out the
+ * whole Mon–Wed the user had just done, and reaching back into the week before
+ * that), and it dropped the current day entirely. Combined with the recap being
+ * armed for `nextWeeklyAt` (the *next* Monday), the notification that landed
+ * reported a window that had already closed. Summing week-to-date matches the
+ * "This week" wording of the notification body.
+ *
+ * Known limit: the body is snapshotted when the one-shot is armed, so a recap
+ * armed on a quiet Sunday cannot include activity from a Monday the app was
+ * never opened on. Fixing that needs a body computed at delivery time, which a
+ * pre-scheduled native notification cannot do.
  */
 export function weekStats(dailyStats, now) {
   let repetitions = 0;
   let activeDays = 0;
-  for (let i = 1; i <= 7; i++) {
-    const d = new Date(now);
-    d.setDate(d.getDate() - i);
+  const d = new Date(now);
+  d.setHours(0, 0, 0, 0);
+  // Monday=0 … Sunday=6, so `daysElapsed` is also how many days of this week
+  // have actually happened. Days after today are not counted: the recap
+  // summarises the week so far, not one that has not finished.
+  const daysElapsed = (d.getDay() + 6) % 7;
+  d.setDate(d.getDate() - daysElapsed);
+  for (let i = 0; i <= daysElapsed; i++) {
     const key = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
     const day = dailyStats && dailyStats[key];
     if (day && day.repetitions > 0) {
       repetitions += day.repetitions;
       activeDays += 1;
     }
+    // Re-read the day off `d` after mutating it, so a DST transition inside the
+    // week can't walk the key onto the same date twice or skip one.
+    if (i < daysElapsed) d.setDate(d.getDate() + 1);
   }
   return { repetitions, activeDays };
 }

@@ -32,23 +32,36 @@ function GoalRing({ todayReps, dailyGoal }) {
 }
 
 /**
- * Expandable vertical nav rail (no card background — icons only).
+ * Vertical nav rail: a fixed 64px column of icon-only buttons floating on the
+ * page (no card behind them).
  *
- * Collapsed: icon-only buttons floating on the page (no pill/card behind
- * them), same positions/sizes as before. Expanded: the rail still grows
- * to roughly half the screen width and each item shows its label, but
- * without a solid panel — labels render directly on the page background.
+ * This used to be an *expandable* rail whose second state grew it to
+ * `w-[46%] max-w-[280px]` and showed text labels beside each icon. That state
+ * was unreachable: the only control that could set it was a collapse chevron
+ * rendered only `{expanded && ...}`, so the expand button was its own
+ * precondition and nothing could ever open the rail. The whole expanded branch
+ * was dead code.
+ *
+ * It was removed rather than revived because it could not have worked as
+ * written. `--nav-gutter` is a fixed `5rem` and every page cancels it out with
+ * `-ms-[var(--nav-gutter)]` so the page spans the full screen width; nothing
+ * widens the gutter on expand. Measured on the counter page, a 190px expanded
+ * rail covered 11 of 11 text elements. Making it usable would have meant either
+ * a slide-over panel with a backdrop or shrinking page content to ~120px, both
+ * visible design changes, so the branch went instead.
+ *
+ * Every item keeps an `aria-label` (from `t`), so the rail stays usable with a
+ * screen reader even though it shows no text.
  */
-export default function NavRail({ items, activeView, expanded, onToggle, onNavigate, todayReps, dailyGoal, timerRunning, onTimer, timerAvailable, minimal, t }) {
-  // clean mode: collapsed rail shows only the home icon
-  const visibleItems = minimal && !expanded ? items.slice(0, 1) : items;
-  const showFooter = !(minimal && !expanded);
+export default function NavRail({ items, activeView, onNavigate, todayReps, dailyGoal, timerRunning, onTimer, timerAvailable, minimal, t }) {
+  // Clean mode: only Home stays, so the counter screen can be used distraction
+  // free. Tapping Home again brings the rest of the rail back (see `navIntent`).
+  const visibleItems = minimal ? items.slice(0, 1) : items;
+  const showFooter = !minimal;
   return (
     <nav
       aria-label={t?.mainNav || "Main navigation"}
-      className={`absolute start-3 z-40 flex flex-col overflow-visible transition-all duration-300 ease-in-out ${
-        expanded ? "w-[46%] max-w-[280px]" : "w-16"
-      }`}
+      className="absolute start-3 z-40 flex flex-col w-16 overflow-visible"
       style={{
         // Keep the rail below the status bar / display cutout and above the
         // bottom nav bar — otherwise the top-most icon (Home) sits under the
@@ -58,57 +71,31 @@ export default function NavRail({ items, activeView, expanded, onToggle, onNavig
         // and then overwritten by MainActivity with the real measured insets.
         // env() alone reports 0 on Android: the window is edge-to-edge, and
         // WebView derives safe-area from the display cutout, not the status bar.
-        top: "calc(var(--sa-top, 0px) + 12px)",
+        //
+        // The 96px top gap (originally 12px) drops the rail well clear of the
+        // status bar and the page header row the other screens draw at y=24.
+        // On a 412x924 screen the Home icon now starts at y=108 instead of
+        // y=24, and the lowest rail element (the Auto Counter button) finishes
+        // at y=499 — about 425px above the bottom edge, so the goal ring and the
+        // timer stay on screen.
+        //
+        // 96px was picked by measuring the range, not by eye. Offsets from 32px
+        // to 128px were applied to the live rail on the counter, adhkar and
+        // settings screens: no offset in that range clips any icon, and the
+        // count of page elements sitting under the rail's x-range does not vary
+        // with the offset (it is 11 on the counter at every value, because that
+        // screen centres its content across the full width rather than beside
+        // the rail). So the only real limits are staying under the status bar
+        // and keeping the bottom group visible, and 96px sits comfortably
+        // inside both.
+        top: "calc(var(--sa-top, 0px) + 96px)",
         bottom: "calc(var(--sa-bottom, 0px) + 12px)"
       }}
     >
-      {/* collapse chevron (no logo — it duplicated the Daily Adhkar icon) */}
-      {expanded && (
-        <div className="flex justify-end px-3 pt-4 pb-2">
-          <button
-            aria-label={t?.collapse || "Collapse"}
-            onClick={onToggle}
-            className="nav-glass w-8 h-8 rounded-full text-[var(--ivory)] flex items-center justify-center active:scale-90"
-          >
-            <Icon name="chevronRight" size={14} className="rotate-180" />
-          </button>
-        </div>
-      )}
-
       {/* nav items */}
-      <div className={`flex-1 flex flex-col py-3 ${expanded ? "items-stretch gap-1.5 px-2" : "items-center gap-2"}`}>
+      <div className="flex-1 flex flex-col py-3 items-center gap-2">
         {visibleItems.map((it) => {
           const active = activeView === it.view;
-          if (expanded) {
-            return (
-              <button
-                key={it.view}
-                aria-label={it.label}
-                aria-current={active ? "page" : undefined}
-                onClick={() => onNavigate(it.view)}
-                className={`flex items-center gap-3 rounded-full px-2 py-1.5 transition-colors ${
-                  active
-                    ? "bg-[#C79A4B]/15"
-                    : "hover:bg-white/50 dark:hover:bg-white/5 active:bg-white/70"
-                }`}
-              >
-                <span
-                  className={`nav-glass w-9 h-9 rounded-full flex items-center justify-center shrink-0 transition-colors ${
-                    active ? "nav-glass-active text-[var(--gold)]" : "text-[var(--ivory)]"
-                  }`}
-                >
-                  <Icon name={it.icon} size={20} />
-                </span>
-                <span
-                  className={`text-sm font-semibold whitespace-nowrap ${
-                    active ? "text-[var(--gold)] dark:text-[var(--gold)]" : "text-[#8C7355] dark:text-[#B9A484]"
-                  }`}
-                >
-                  {it.label}
-                </span>
-              </button>
-            );
-          }
           return (
             <button
               key={it.view}
@@ -126,11 +113,7 @@ export default function NavRail({ items, activeView, expanded, onToggle, onNavig
 
         {/* goal ring + timer, below the nav items */}
         {showFooter && (
-        <div
-          className={`pt-2 mt-1.5 border-t border-black/10 dark:border-white/10 ${
-            expanded ? "px-2 flex items-center gap-3" : "flex flex-col items-center gap-2"
-          }`}
-        >
+        <div className="pt-2 mt-1.5 border-t border-black/10 dark:border-white/10 flex flex-col items-center gap-2">
           <GoalRing todayReps={todayReps} dailyGoal={dailyGoal} />
           {/* The Auto Counter launcher only makes sense while there is an
               active, unfinished counter session; otherwise it is hidden so a

@@ -337,12 +337,20 @@ body {
 .pattern-bg::before {
   content: "";
   position: absolute;
-  top: 0; bottom: 0; inset-inline-end: -6px;
-  /* Reach one gutter past the page's inline-start edge so the photo still
-     covers the full screen behind the floating nav rail, while the page's
-     own content stays inside the content column beside it. */
+  top: 0; bottom: 0;
+  /* Symmetric bleed, matching .counter-bg::before exactly.
+     This used to be `inset-inline-end: -6px` against a
+     `calc(-1 * var(--bg-bleed))` start edge, which built a box ~6px wider than
+     the screen and shifted its centre 3.1px to the right. The photo is
+     portrait and the viewport is nearly the same ratio, so `cover` fits by
+     width — meaning that extra 6px of box width cropped the image 6px off
+     centre. Every .pattern-bg page (7 of 8) therefore showed the backdrop
+     nudged right while the counter page, which already used symmetric edges,
+     was correctly centred. Both edges now reach the same distance past the page
+     box, so the picture is centred identically on every page. */
   inset-inline-start: calc(-1 * var(--bg-bleed));
-  background-image: url('/counter-bg-kaaba.webp?v=65');
+  inset-inline-end: calc(-1 * var(--bg-bleed));
+  background-image: url('/counter-bg-kaaba.webp?v=66');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
@@ -353,9 +361,12 @@ body {
 .pattern-bg::after {
   content: "";
   position: absolute;
-  top: 0; bottom: 0; inset-inline-end: -6px;
-  /* same reach as the photo layer */
+  top: 0; bottom: 0;
+  /* Same symmetric reach as the photo layer above, and as
+     .counter-bg::after — the scrim must cover exactly the same area as the
+     image it sits on, or its fade stops short on one side. */
   inset-inline-start: calc(-1 * var(--bg-bleed));
+  inset-inline-end: calc(-1 * var(--bg-bleed));
   background-image: var(--bg-overlay);
   background-size: auto;
   background-repeat: no-repeat;
@@ -386,10 +397,17 @@ body {
      still covering the full width behind the floating nav rail. */
   inset-inline-start: calc(-1 * var(--bg-bleed));
   inset-inline-end: calc(-1 * var(--bg-bleed));
-  background-image: url('/counter-bg-kaaba.webp?v=65');
+  background-image: url('/counter-bg-kaaba.webp?v=66');
   background-size: cover;
   background-position: center;
   background-repeat: no-repeat;
+  /* `fixed`, exactly as `.pattern-bg::before`. This rule used to omit the
+     property, so the photo defaulted to `scroll` here and to `fixed` on every
+     other page: the backdrop was then sized to the page element and travelled
+     with the content, so scrolling the counter slid the photo away while
+     scrolling any other page left it pinned to the screen. One photo, one
+     behaviour. */
+  background-attachment: fixed;
   z-index: -2;
   pointer-events: none;
 }
@@ -415,9 +433,16 @@ body {
 .counter-bg::after {
   content: "";
   position: absolute;
-  top: 0; bottom: 0; inset-inline-end: -6px;
-  /* same reach as the photo layer */
+  top: 0; bottom: 0;
+  /* Same symmetric reach as `.counter-bg::before` and `.pattern-bg::after`.
+     This rule kept the legacy `inset-inline-end: -6px` while its own photo
+     layer above was already symmetric, so the scrim came out 418px wide with
+     its centre at 209.1px while the photo underneath was 412px centred at
+     206.1px — the wash sat 3px right of the image it is supposed to darken and
+     overhung the right edge by 6px, and the counter page was the only screen
+     where the two layers disagreed. */
   inset-inline-start: calc(-1 * var(--bg-bleed));
+  inset-inline-end: calc(-1 * var(--bg-bleed));
   background-image: var(--bg-overlay);
   background-size: auto;
   background-repeat: no-repeat;

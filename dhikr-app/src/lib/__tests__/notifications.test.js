@@ -108,27 +108,59 @@ describe("weekKeyOf", () => {
 });
 
 describe("weekStats", () => {
-  it("sums repetitions and active days over the 7 preceding days", () => {
+  it("sums this week to date — Monday up to and including today", () => {
+    // 2026-09-17 is a Thursday, so the week is Mon 14 → Sun 20.
     const stats = {
-      "2026-09-10": { repetitions: 100, sessions: 2 },
-      "2026-09-12": { repetitions: 50, sessions: 1 },
-      "2026-09-15": { repetitions: 10, sessions: 1 }
+      "2026-09-14": { repetitions: 100, sessions: 2 },
+      "2026-09-16": { repetitions: 50, sessions: 1 },
+      "2026-09-17": { repetitions: 10, sessions: 1 }, // today — included
+      "2026-09-18": { repetitions: 999, sessions: 9 }, // later this week — not yet
+      "2026-09-12": { repetitions: 500, sessions: 5 } // last week — excluded
     };
     const s = weekStats(stats, at(2026, 9, 17));
     expect(s).toEqual({ repetitions: 160, activeDays: 3 });
   });
 
-  it("excludes today and ignores empty days", () => {
+  it("does not reach back into the previous week on a Monday", () => {
+    // The old rolling 7-day window summed Thu–Sun of the *previous* week here.
     const stats = {
-      "2026-09-17": { repetitions: 500 }, // today — excluded
-      "2026-09-16": { repetitions: 0 } // inactive — not an active day
+      "2026-09-10": { repetitions: 100 }, // Thu, previous week
+      "2026-09-11": { repetitions: 100 }, // Fri, previous week
+      "2026-09-12": { repetitions: 100 }, // Sat, previous week
+      "2026-09-13": { repetitions: 100 }, // Sun, previous week
+      "2026-09-14": { repetitions: 7 } // Mon, this week
     };
-    const s = weekStats(stats, at(2026, 9, 17, 9, 0));
-    expect(s).toEqual({ repetitions: 0, activeDays: 0 });
+    expect(weekStats(stats, at(2026, 9, 14, 10, 0))).toEqual({ repetitions: 7, activeDays: 1 });
   });
 
-  it("tolerates a missing dailyStats map", () => {
+  it("includes Sunday when asked on a Sunday", () => {
+    // 2026-09-13 is a Sunday: the week is Mon 7 → Sun 13, and the last day of
+    // the week is the one being counted.
+    const stats = { "2026-09-13": { repetitions: 42 } };
+    expect(weekStats(stats, at(2026, 9, 13, 22, 0))).toEqual({ repetitions: 42, activeDays: 1 });
+  });
+
+  it("ignores inactive days and missing maps", () => {
+    const stats = {
+      "2026-09-16": { repetitions: 0 }, // inactive — not an active day
+      "2026-09-15": { repetitions: 0 }
+    };
+    expect(weekStats(stats, at(2026, 9, 17, 9, 0))).toEqual({ repetitions: 0, activeDays: 0 });
     expect(weekStats(undefined, at(2026, 9, 17))).toEqual({ repetitions: 0, activeDays: 0 });
+  });
+
+  it("counts each day of a week exactly once across a month boundary", () => {
+    // Week of Mon 2026-08-31 → Sun 2026-09-06 straddles the month change.
+    const stats = {
+      "2026-08-31": { repetitions: 3 },
+      "2026-09-01": { repetitions: 3 },
+      "2026-09-02": { repetitions: 3 },
+      "2026-09-03": { repetitions: 3 },
+      "2026-09-04": { repetitions: 3 },
+      "2026-09-05": { repetitions: 3 },
+      "2026-09-06": { repetitions: 3 }
+    };
+    expect(weekStats(stats, at(2026, 9, 6, 23, 0))).toEqual({ repetitions: 21, activeDays: 7 });
   });
 });
 

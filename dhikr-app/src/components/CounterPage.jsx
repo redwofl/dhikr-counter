@@ -118,7 +118,13 @@ export default function CounterPage({ template, session, setSession, settings, t
     };
   }, [autoRunning]);
 
-  if (!template || !session) {
+  // `currentItem` is part of the guard, not just `template`: editing a custom
+  // template while its session is in progress (or importing one) can leave
+  // `session.currentItemIndex` pointing past the end of a shortened items
+  // array. `effectiveMaxFor` then dereferenced `item.id` on `undefined`,
+  // throwing during render and dumping the user into the ErrorBoundary, whose
+  // only recovery button wipes localStorage — i.e. losing the whole session.
+  if (!template || !session || !currentItem) {
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-8 text-center counter-bg -ms-[var(--nav-gutter)] [--bg-bleed:0px]">
         <p className="font-display text-2xl text-[var(--brown-900)] dark:text-[var(--dark-text)] mb-4">{t.noSavedSession}</p>
@@ -136,11 +142,15 @@ export default function CounterPage({ template, session, setSession, settings, t
   };
 
   const handleSetMax = (newMax) => {
-    // Never let the target drop below what has already been counted. The next
-    // tap tests `currentCount + 1 >= max`, so lowering the max under the live
-    // count made that tap complete the round and reset the count to 0 —
-    // silently discarding every repetition counted so far.
-    setSession((prev) => setCustomMax(prev, currentItem.id, Math.max(newMax, prev.currentCount)));
+    // The target is stored exactly as typed. This used to be clamped up to the
+    // live count (`Math.max(newMax, prev.currentCount)`), which threw away the
+    // value the user had just entered without telling them: on a 33-count round
+    // at 5/33, asking for 3 stored 5 and the dialog re-opened showing 5. The
+    // clamp also made the next tap complete the round, so a tap that
+    // corresponded to no new dhikr got recorded as a repetition.
+    // `effectiveCount` below already clamps the *display* to the new max, so a
+    // lowered target renders as e.g. 3 / 3 and the count stays honest.
+    setSession((prev) => setCustomMax(prev, currentItem.id, newMax));
   };
 
   const effectiveMax = effectiveMaxFor(session, currentItem);
@@ -151,6 +161,11 @@ export default function CounterPage({ template, session, setSession, settings, t
   if (session.completed) {
     const lastItem = template.items[template.items.length - 1];
     const lastEffMax = effectiveMaxFor(session, lastItem);
+    // Report the count the round actually ended on, not the target. Printing
+    // `lastEffMax / lastEffMax` overstated it whenever the max was raised after
+    // the reps were counted (33 taps against a target later raised to 100
+    // claimed "100 / 100").
+    const lastCount = Math.min(session.currentCount, lastEffMax);
     return (
       <div className="min-h-screen flex flex-col items-center justify-center px-8 text-center counter-bg safe-top safe-bottom -ms-[var(--nav-gutter)] [--bg-bleed:0px]">
         <Confetti />
@@ -160,7 +175,7 @@ export default function CounterPage({ template, session, setSession, settings, t
         <p className={`font-arabic gold-lux ${arabicHeadlineClass(lastItem.arabic)} font-bold text-center mb-2 break-words`}>{lastItem.arabic}</p>
         <h2 className="font-display text-3xl font-semibold text-[var(--terra-dark)] dark:text-[var(--gold)] mt-3 mb-1">{t.dhikrComplete}</h2>
         <p className="text-[var(--brown-500)] dark:text-[var(--dark-muted)] mb-6">
-          {lastEffMax} / {lastEffMax}
+          {lastCount} / {lastEffMax}
         </p>
         <p className="text-sm text-[var(--brown-500)] dark:text-[var(--dark-muted)] mb-1">{t.youCompleted}</p>
         <p className="font-display text-xl text-[var(--terra-dark)] dark:text-[var(--gold)] mb-10">{template.name}</p>
