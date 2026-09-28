@@ -247,7 +247,7 @@ export default function SettingsPage({ settings, updateSettings, t, onResetAll, 
                       </span>
                     )}
                   </span>
-                  <span className={`text-[9px] leading-tight text-center ${isActive ? "text-[var(--terra-dark)] font-semibold" : "text-[var(--brown-500)] dark:text-[var(--dark-muted)]"} w-14 truncate capitalize`}>
+                  <span className={`text-[9px] leading-tight text-center ${isActive ? "text-[var(--terra-dark)] dark:text-[var(--gold)] font-semibold" : "text-[var(--brown-500)] dark:text-[var(--dark-muted)]"} w-14 truncate capitalize`}>
                     {t["sound_" + snd]}
                   </span>
                 </button>
@@ -288,7 +288,7 @@ export default function SettingsPage({ settings, updateSettings, t, onResetAll, 
                       boxShadow: isActive ? `0 0 0 2px ${pal.ringStroke}` : undefined,
                     }}
                   />
-                  <span className={`text-[9px] leading-tight text-center ${isActive ? "text-[var(--terra-dark)] font-semibold" : "text-[var(--brown-500)] dark:text-[var(--dark-muted)]"} w-14 truncate`}>
+                  <span className={`text-[9px] leading-tight text-center ${isActive ? "text-[var(--terra-dark)] dark:text-[var(--gold)] font-semibold" : "text-[var(--brown-500)] dark:text-[var(--dark-muted)]"} w-14 truncate`}>
                     {pal.name.split(" & ")[0]}
                   </span>
                 </button>
@@ -313,7 +313,7 @@ export default function SettingsPage({ settings, updateSettings, t, onResetAll, 
                       : "bg-white/70 dark:bg-white/10 hover:scale-105"
                     }`}
                 >
-                  <span className={`leading-tight text-center ${isActive ? "text-[var(--terra-dark)] font-semibold" : "text-[var(--brown-500)] dark:text-[var(--dark-muted)]"}`}>{t["theme_" + th]}</span>
+                  <span className={`leading-tight text-center ${isActive ? "text-[var(--terra-dark)] dark:text-[var(--gold)] font-semibold" : "text-[var(--brown-500)] dark:text-[var(--dark-muted)]"}`}>{t["theme_" + th]}</span>
                 </button>
               );
             })}
@@ -342,7 +342,7 @@ export default function SettingsPage({ settings, updateSettings, t, onResetAll, 
                     big ? "py-3.5 px-6" : "py-2.5 px-4"
                   } ${isActive ? "scale-105" : "hover:scale-105"}`}
                 >
-                  <span dir="auto" className={`leading-tight text-center ${isActive ? "text-[var(--terra-dark)] font-semibold" : "text-[var(--brown-500)] dark:text-[var(--dark-muted)]"}`}>{label}</span>
+                  <span dir="auto" className={`leading-tight text-center ${isActive ? "text-[var(--terra-dark)] dark:text-[var(--gold)] font-semibold" : "text-[var(--brown-500)] dark:text-[var(--dark-muted)]"}`}>{label}</span>
                   {englishName && <span className="text-[10px] uppercase tracking-wide opacity-75 leading-tight">{englishName}</span>}
                 </button>
               );
@@ -376,7 +376,7 @@ export default function SettingsPage({ settings, updateSettings, t, onResetAll, 
             />
           </div>
 
-          <button onClick={() => setShowResetAll(true)} className="w-full py-3 rounded-2xl border border-red-300 text-red-500 font-medium active:scale-95 mb-3">
+          <button onClick={() => setShowResetAll(true)} className="w-full py-3 rounded-2xl border border-red-300 dark:border-red-400/50 text-red-500 dark:text-red-400 font-medium active:scale-95 mb-3">
             {t.resetAllData}
           </button>
           <p className="text-xs text-center text-[var(--brown-500)]/70 dark:text-[var(--dark-muted)]/70">{t.savedLocallyNote}</p>

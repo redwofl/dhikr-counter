@@ -86,7 +86,7 @@ export default function TemplateEditorModal({ open, initial, onClose, onSave, t 
               onChange={(e) => updateLine(line.id, { count: e.target.value })}
               className="w-14 text-sm text-right bg-transparent outline-none text-[var(--terra-dark)] dark:text-[var(--gold)] font-semibold"
             />
-            <button aria-label={t.delete} onClick={() => removeLine(line.id)} className="p-1 text-[var(--brown-500)] hover:text-red-500 shrink-0">
+            <button aria-label={t.delete} onClick={() => removeLine(line.id)} className="p-1 text-[var(--brown-500)] dark:text-[var(--dark-muted)] hover:text-red-500 shrink-0">
               <Icon name="x" size={14} />
             </button>
           </div>
@@ -97,7 +97,7 @@ export default function TemplateEditorModal({ open, initial, onClose, onSave, t 
         <Icon name="plus" size={14} /> {t.addLine}
       </button>
 
-      {Object.keys(errors).length > 0 && <p className="text-xs text-red-500 mb-3">{t.requiredField}</p>}
+      {Object.keys(errors).length > 0 && <p className="text-xs text-red-500 dark:text-red-400 mb-3">{t.requiredField}</p>}
 
       <div className="flex items-center justify-between">
         <button aria-label={t.resetForm} onClick={reset} className="p-2 -ml-2 rounded-full text-[var(--brown-500)] dark:text-[var(--dark-muted)] hover:bg-black/5 dark:hover:bg-white/10">

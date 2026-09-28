@@ -101,6 +101,15 @@
   --terra:#C1723C; --terra-dark:#9C5A2C; --gold:#C79A4B;
   --ivory:#F0E7D0;
   --dark-bg:#211A12; --dark-card:#2C2116; --dark-text:#EFE3CC; --dark-muted:#B9A484;
+  /* Activity-heatmap intensity ramp, level 0 (no repetitions) to level 4.
+
+     These are declared as variables rather than inlined in the component's
+     `cellColor()` because the ramp has to change per theme. Level 0 was
+     hard-coded to --beige, a light cream, which in dark mode painted a grid of
+     bright blocks for every day with no activity — the single most obvious
+     light-mode leftover in the app. Level 0 is now a neutral surface tone and
+     the lit levels are gold-tinted, matching every other accent in .dark. */
+  --heat-0:#EAE0C8; --heat-1:#9C5A2C33; --heat-2:#9C5A2C55; --heat-3:#9C5A2C99; --heat-4:#9C5A2C;
   /* matches the dark green at the top of the wall image */
   --wall-green:#223722;
   /* System-bar insets, in CSS px.
@@ -146,27 +155,33 @@
       rgba(0, 0, 0, 0.38) 76%,
       rgba(0, 0, 0, 0.5) 100%
     );
-  /* Dark-mode scrim. This used to be *lighter* than --bg-scrim-light
-     (0.32 vs 0.50 at the bottom) and transparent across the whole top half.
-     That was tuned against a background image whose top 38% was measured as
-     black, so there was nothing left to dim up there — but the photo behind
-     the app is a mid-tone image (mean rgb 67,45,27) and the deployed
-     background changes over time. With no black region to hide, "transparent
-     at the top" meant the top half was left at full brightness and the
-     bottom was dimmed less than in light mode, so dark mode came out
-     measurably *brighter* than light mode (mean rgb 73,50,30 vs 67,45,27).
-     The photo looked the same and the text lost contrast: dark mode read as
-     broken.
-     A dark theme has to darken from the top down, so this is a full-coverage
-     wash in the app's own dark surface tone (near --dark-bg) rather than
-     black, keeping the warm cast. */
+  /* Dark-mode scrim, derived from the deployed photo by photo-probe.mjs
+     instead of picked by eye.
+
+     It used to be a wash of rgb(33,26,18), the same tone as --dark-bg, at
+     0.50-0.78. That is a *light* colour to composite at high alpha, and the
+     photo behind the app has a mean of only rgb(45,29,15) -- so the wash was
+     closer to the image than the black wash light mode uses. On top of that
+     the photo layer carried a `lighten` blend against --dark-bg, which
+     RAISED every pixel under #211A12 up to exactly that value. The two
+     effects cancelled: dark mode rendered measurably BRIGHTER than light
+     mode in six of the eight screen bands, while the photograph itself was
+     identical in both themes. That inversion is the difference a dark theme
+     cannot have.
+
+     This is now a near-black warm wash with the same shape as the light-mode
+     scrim: 0.40 at the top deepening to 0.88 at the bottom. Measured against
+     the shipped light-mode result, every band is 1.3x-2.6x darker, and
+     --dark-muted (the 12-14px secondary text) keeps 7.4:1 at worst. The
+     slight warm cast (6,4,2 rather than 0,0,0) preserves the photograph's own
+     colour rather than desaturating it. */
   --bg-scrim-dark:
     linear-gradient(
       to bottom,
-      rgba(33, 26, 18, 0.5) 0%,
-      rgba(33, 26, 18, 0.58) 35%,
-      rgba(33, 26, 18, 0.68) 70%,
-      rgba(33, 26, 18, 0.78) 100%
+      rgba(6, 4, 2, 0.4) 0%,
+      rgba(6, 4, 2, 0.62) 35%,
+      rgba(6, 4, 2, 0.77) 70%,
+      rgba(6, 4, 2, 0.88) 100%
     );
   --bg-brown-light:
     linear-gradient(
@@ -201,12 +216,12 @@
   --bg-overlay: var(--bg-scrim);
 }
 .dark {
-  /* Dark mode is deliberately gentler: the photo layer is already lifted to
-     --dark-bg by a `lighten` blend, so the scrim only has to seat the bottom
-     controls, and a heavier wash here is what made the screen read as a
-     black hole. */
+  /* The scrim is the only thing that darkens the photo now, so it carries the
+     full load: see the derivation above and `photo-probe.mjs`, which computes
+     these stops from the deployed image rather than by eye. */
   --bg-scrim: var(--bg-scrim-dark);
   --bg-brown: var(--bg-brown-dark);
+  --heat-0:#FFFFFF14; --heat-1:#C79A4B4D; --heat-2:#C79A4B8C; --heat-3:#C79A4BCC; --heat-4:#C79A4B;
 }
 html, body, #root { height: 100%; }
 body {
@@ -411,19 +426,20 @@ body {
   z-index: -2;
   pointer-events: none;
 }
-/* Dark mode lifts the photo's darkest pixels up to the app's own dark
-   surface with per-channel max (`lighten`), so the backdrop is never darker
-   than the page around it. On a photo with a genuinely black region that is
-   the whole effect; on the mid-tone image actually deployed it changes almost
-   nothing, because per-channel max against a light backdrop is a no-op. The
-   darkening itself is done by --bg-scrim-dark on the `::after` layer above,
-   which is a full-coverage wash and does not depend on the photo happening
-   to contain black. */
-.dark .counter-bg::before,
-.dark .pattern-bg::before {
-  background-color: var(--dark-bg);
-  background-blend-mode: lighten;
-}
+/* The `background-blend-mode: lighten` + `background-color: var(--dark-bg)`
+   pair that used to sit here has been removed. The intent was to stop the
+   backdrop being darker than the page, but `lighten` is per-channel MAX, so it
+   does the exact opposite of darkening: it raises every pixel of the photo that
+   sits below #211A12 up to precisely #211A12, and leaves everything brighter
+   untouched. On the deployed image the bottom of the photo is rgb(17,14,10),
+   so that band was being lifted to rgb(33,26,18) — nearly doubled — and the
+   following scrim, itself a light brown, could not take it back down. It is
+   what made dark mode brighter than light mode.
+
+   Nothing is lost by dropping it: --bg-scrim-dark on the `::after` layer is a
+   full-coverage wash and does the darkening on its own, without depending on
+   the photo happening to contain a black region. If a floor is ever wanted
+   again it should be a `darken` blend, never `lighten`. */
 /* No `.dark` override is needed for the overlay stack: --bg-scrim and
    --bg-brown are redefined on `.dark` in :root, and a pseudo-element
    inherits custom properties from its originating element, so the base
@@ -476,6 +492,14 @@ input[type=range]::-webkit-slider-thumb {
 }
 input[type=range]::-moz-range-track { height: 3px; background: var(--terra-dark); border-radius: 2px; }
 input[type=range]::-moz-range-thumb { width: 17px; height: 17px; border-radius: 50%; background: var(--terra-dark); border: 2px solid #fff; }
+/* The max-count slider sits on the dark modal card, where a --terra-dark track
+   (L≈0.15) on --dark-card (L≈0.02) was almost invisible and the thumb's white
+   ring read as a light-mode artifact. Both parts follow the gold accent that
+   the rest of .dark uses for active/primary affordances. */
+.dark input[type=range]::-webkit-slider-runnable-track { background: var(--gold); }
+.dark input[type=range]::-webkit-slider-thumb { background: var(--gold); border-color: var(--dark-card); }
+.dark input[type=range]::-moz-range-track { background: var(--gold); }
+.dark input[type=range]::-moz-range-thumb { background: var(--gold); border-color: var(--dark-card); }
 
 @keyframes slideUp { from { transform: translateY(24px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 @keyframes fadeIn { from { opacity: 0; transform: translate(-50%, 6px); } to { opacity: 1; transform: translate(-50%, 0); } }

@@ -39,7 +39,7 @@ export default function AutoCounterModal({ open, onClose, onConfirm, t }) {
         <button
           onClick={() => setTab("touch")}
           className={`flex-1 pb-2.5 text-sm font-medium border-b-2 -mb-px ${
-            tab === "touch" ? "border-[var(--terra-dark)] text-[var(--terra-dark)]" : "border-transparent text-[var(--brown-500)] dark:text-[var(--dark-muted)]"
+            tab === "touch" ? "border-[var(--terra-dark)] dark:border-[var(--gold)] text-[var(--terra-dark)] dark:text-[var(--gold)]" : "border-transparent text-[var(--brown-500)] dark:text-[var(--dark-muted)]"
           }`}
         >
           {t.touch}
@@ -47,7 +47,7 @@ export default function AutoCounterModal({ open, onClose, onConfirm, t }) {
         <button
           onClick={() => setTab("timer")}
           className={`flex-1 pb-2.5 text-sm font-medium border-b-2 -mb-px ${
-            tab === "timer" ? "border-[var(--terra-dark)] text-[var(--terra-dark)]" : "border-transparent text-[var(--brown-500)] dark:text-[var(--dark-muted)]"
+            tab === "timer" ? "border-[var(--terra-dark)] dark:border-[var(--gold)] text-[var(--terra-dark)] dark:text-[var(--gold)]" : "border-transparent text-[var(--brown-500)] dark:text-[var(--dark-muted)]"
           }`}
         >
           {t.timer}

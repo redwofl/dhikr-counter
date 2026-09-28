@@ -24,7 +24,7 @@ export default function TemplateCard({ tpl, onStart, onEdit, onDelete, t }) {
         ))}
         {tpl.items.length > 4 && <p className="text-xs text-[var(--brown-500)] dark:text-[var(--dark-muted)]">+{tpl.items.length - 4} more</p>}
       </div>
-      <button onClick={() => onStart(tpl)} className="text-sm font-semibold text-[var(--terra-dark)] flex items-center gap-1 active:opacity-60">
+      <button onClick={() => onStart(tpl)} className="text-sm font-semibold text-[var(--terra-dark)] dark:text-[var(--gold)] flex items-center gap-1 active:opacity-60">
         {t.start} <Icon name="chevronRight" size={15} />
       </button>
     </div>

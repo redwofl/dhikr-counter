@@ -7,7 +7,7 @@ export default function InfoModal({ open, onClose, template, t }) {
     <Modal open={open} onClose={onClose} title={template ? template.name : t.about} labelledBy="info-title" wide t={t}>
       <div className="text-sm text-[var(--brown-700)] dark:text-[var(--dark-muted)] leading-relaxed whitespace-pre-line mb-6">{text}</div>
       <div className="flex justify-end">
-        <button onClick={onClose} className="px-5 py-2.5 rounded-xl bg-[var(--terra-dark)]/10 text-[var(--terra-dark)] font-semibold active:opacity-60">
+        <button onClick={onClose} className="px-5 py-2.5 rounded-xl bg-[var(--terra-dark)]/10 dark:bg-[var(--gold)]/15 text-[var(--terra-dark)] dark:text-[var(--gold)] font-semibold active:opacity-60">
           {t.close}
         </button>
       </div>

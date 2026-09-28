@@ -34,8 +34,8 @@ class ErrorBoundary extends React.Component {
       return (
         <div className="min-h-screen flex flex-col items-center justify-center px-8 text-center">
           <p className="font-display text-2xl mb-3">{t.errorTitle}</p>
-          <p className="text-sm text-red-600 mb-4 max-w-xs break-words">{this.state.errorMsg}</p>
-          <pre className="text-left text-[10px] text-red-700 bg-white/70 dark:bg-black/20 p-2 rounded-md max-w-xs max-h-40 overflow-auto break-words whitespace-pre-wrap">{this.state.errorStack}</pre>
+          <p className="text-sm text-red-600 dark:text-red-400 mb-4 max-w-xs break-words">{this.state.errorMsg}</p>
+          <pre className="text-left text-[10px] text-red-700 dark:text-red-300 bg-white/70 dark:bg-black/20 p-2 rounded-md max-w-xs max-h-40 overflow-auto break-words whitespace-pre-wrap">{this.state.errorStack}</pre>
           <button
             onClick={() => {
               localStorage.removeItem("dhikr_app_v1");

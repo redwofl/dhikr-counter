@@ -37,13 +37,7 @@ function Heatmap({ dailyStats, dailyGoal, t }) {
     weeks.push(days);
   }
 
-  const cellColor = (level) => {
-    if (level === 0) return "var(--beige)";
-    if (level === 1) return "var(--terra-dark)33";
-    if (level === 2) return "var(--terra-dark)55";
-    if (level === 3) return "var(--terra-dark)99";
-    return "var(--terra-dark)";
-  };
+  const cellColor = (level) => `var(--heat-${level < 0 || level > 4 ? 0 : level})`;
 
   return (
     <div className="rounded-2xl bg-white/70 dark:bg-white/5 border border-[var(--beige)]/70 dark:border-white/10 p-4 mb-6">
@@ -56,7 +50,7 @@ function Heatmap({ dailyStats, dailyGoal, t }) {
                 title={`${day.key}: ${day.reps} ${t.reps}`}
                 className={`w-full aspect-square rounded-[3px] transition-colors ${
                   day.future ? "opacity-0" : ""
-                } ${day.isToday ? "ring-1 ring-[var(--terra-dark)] ring-offset-1" : ""}`}
+                } ${day.isToday ? "ring-1 ring-[var(--terra-dark)] dark:ring-[var(--gold)] ring-offset-1 ring-offset-white/70 dark:ring-offset-white/5" : ""}`}
                 style={{ backgroundColor: day.future ? "transparent" : cellColor(day.level) }}
               />
             ))}

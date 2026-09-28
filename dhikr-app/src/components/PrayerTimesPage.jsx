@@ -133,12 +133,20 @@ export default function PrayerTimesPage({ t, onBack }) {
       // After Isha every prayer has passed for today, so carry tomorrow's Fajr
       // into the list — the "next prayer" card and the highlighted row then
       // always agree instead of the card pointing to an unlisted time.
-      const upcomingList = next ? list : [...list, { key: "fajr-tomorrow", date: tomorrowTimes.fajr }];
-      const nextPrayer = next || upcomingList[upcomingList.length - 1];
+      //
+      // The synthetic row carries its own `key`/`labelKey` pair: `key` stays
+      // unique for React's list and for the isNext comparison, while `labelKey`
+      // is what gets looked up in the translations. Using "fajr-tomorrow" as the
+      // key *and* the label left `t["fajr-tomorrow"]` undefined, so the raw
+      // string was printed on screen for every language.
+      const tomorrow = { key: "fajr-tomorrow", labelKey: "fajrTomorrow", date: tomorrowTimes.fajr };
+      const upcomingList = next ? list : [...list, tomorrow];
+      const nextPrayer = next || tomorrow;
       const mins = Math.max(0, Math.round((nextPrayer.date - now) / 60000));
       return {
         list: upcomingList,
         nextKey: nextPrayer.key,
+        nextLabelKey: nextPrayer.labelKey || nextPrayer.key,
         countdown: `${Math.floor(mins / 60)}h ${String(mins % 60).padStart(2, "0")}m`,
         qibla: Math.round(qiblaBearing(loc.lat, loc.lng) * 10) / 10
       };
@@ -200,7 +208,7 @@ export default function PrayerTimesPage({ t, onBack }) {
                       />
                     </label>
                   </div>
-                  {manualError && <p className="text-xs text-red-500">{t.invalidCoordinates}</p>}
+                  {manualError && <p className="text-xs text-red-500 dark:text-red-400">{t.invalidCoordinates}</p>}
                   <button
                     type="submit"
                     className="px-6 py-2.5 rounded-2xl border border-[var(--terra-dark)] text-[var(--terra-dark)] dark:text-[var(--gold)] font-medium text-sm active:scale-95"
@@ -215,10 +223,10 @@ export default function PrayerTimesPage({ t, onBack }) {
 
         {loc && data && (
           <>
-            <div className="rounded-2xl bg-gradient-to-b from-[#C1723C] to-[#9C5A2C] text-white p-5 mb-4 shadow-lg">
-              <p className="text-xs uppercase tracking-wide opacity-80 mb-1">{t.nextPrayer}</p>
+            <div className="rounded-2xl bg-gradient-to-b from-[#A05C2D] to-[#7E471F] text-white p-5 mb-4 shadow-lg">
+              <p className="text-xs uppercase tracking-wide text-white/95 mb-1">{t.nextPrayer}</p>
               <div className="flex items-center justify-between">
-                <p className="font-display text-2xl font-semibold">{t[data.nextKey] || data.nextKey}</p>
+                <p className="font-display text-2xl font-semibold">{t[data.nextLabelKey] || data.nextLabelKey}</p>
                 <p className="text-xl font-bold tabular-nums">{data.countdown}</p>
               </div>
             </div>
@@ -238,7 +246,7 @@ export default function PrayerTimesPage({ t, onBack }) {
                           : "text-[var(--brown-900)] dark:text-[var(--dark-text)]"
                       }`}
                     >
-                      {t[p.key] || p.key}
+                      {t[p.labelKey || p.key] || p.labelKey || p.key}
                     </span>
                     <span className="text-sm font-semibold tabular-nums text-[var(--brown-700)] dark:text-[var(--dark-muted)]">
                       {fmtTime(p.date)}

@@ -26,7 +26,7 @@ export default function IntroScreen({ onStart, onExplore, t }) {
       </button>
       <button
         onClick={onExplore}
-        className="relative w-full max-w-xs py-4 rounded-2xl bg-white/70 border border-[var(--beige)] text-[var(--brown-700)] font-medium active:scale-95 transition"
+        className="relative w-full max-w-xs py-4 rounded-2xl bg-white/70 dark:bg-white/10 border border-[var(--beige)] dark:border-white/20 text-[var(--brown-700)] dark:text-[var(--dark-text)] font-medium active:scale-95 transition"
       >
         {t.exploreTemplates}
       </button>

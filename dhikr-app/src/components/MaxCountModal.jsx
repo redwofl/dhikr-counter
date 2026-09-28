@@ -48,7 +48,7 @@ export default function MaxCountModal({ open, onClose, initial, onSubmit, t }) {
             onClick={() => setVal(p)}
             className={`flex-1 py-2 rounded-full text-sm font-medium border transition ${
               val === p
-                ? "bg-[var(--terra)]/15 border-[var(--terra)] text-[var(--terra-dark)]"
+                ? "bg-[var(--terra)]/15 border-[var(--terra)] text-[var(--terra-dark)] dark:bg-[var(--gold)]/15 dark:border-[var(--gold)] dark:text-[var(--gold)]"
                 : "border-[var(--beige)] dark:border-white/10 text-[var(--brown-700)] dark:text-[var(--dark-muted)]"
             }`}
           >
@@ -56,7 +56,7 @@ export default function MaxCountModal({ open, onClose, initial, onSubmit, t }) {
           </button>
         ))}
       </div>
-      {!valid && <p className="text-xs text-red-500 mb-2">{t.maxCountError}</p>}
+      {!valid && <p className="text-xs text-red-500 dark:text-red-400 mb-2">{t.maxCountError}</p>}
       <div className="flex justify-end gap-5">
         <button onClick={onClose} className="px-2 py-2 text-[var(--brown-500)] dark:text-[var(--dark-muted)] font-medium active:opacity-60">
           {t.cancel}
@@ -67,7 +67,7 @@ export default function MaxCountModal({ open, onClose, initial, onSubmit, t }) {
             onSubmit(val);
             onClose();
           }}
-          className="px-2 py-2 font-semibold text-[var(--terra-dark)] disabled:opacity-40 active:opacity-60"
+          className="px-2 py-2 font-semibold text-[var(--terra-dark)] dark:text-[var(--gold)] disabled:opacity-40 active:opacity-60"
         >
           {t.submit}
         </button>
